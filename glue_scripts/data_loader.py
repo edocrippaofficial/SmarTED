@@ -3,10 +3,8 @@
 ###### TEDx-Load-Aggregate-Model
 
 import sys
-import json
 import pyspark
-from pyspark.sql.functions import col, collect_list, array, lit
-from pyspark.sql.types import StringType, ArrayType, StructType, StructField
+from pyspark.sql.functions import col, collect_list
 
 from awsglue.transforms import *
 from awsglue.utils import getResolvedOptions
