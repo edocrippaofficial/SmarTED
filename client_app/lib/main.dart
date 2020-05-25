@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:smarted/cognito.dart';
@@ -9,6 +10,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -56,39 +58,135 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  bool _authenticated = false;
-  bool _authSignUp = false;
-  Cognito _cognito = Cognito();
+  bool _authenticated;
+  bool _authSignUp;
+  Cognito _cognito;
+  final txt1 = TextEditingController();
+  final txt2 = TextEditingController();
 
-  void toggleAuthPage() {
+  @override
+  initState() {
+    super.initState();
+    _cognito = Cognito();
+    _authSignUp = false;
+    _authenticated = _cognito.isAuthenticated();
+  }
+
+  void _toggleAuthPage() {
     setState(() {
       _authSignUp = !_authSignUp;
     });
   }
 
-  void setAuthenticated(bool auth) {
+  void _setAuthenticated(bool auth) {
+    txt1.text = "";
+    txt2.text = "";
     setState(() {
       _authenticated = auth;
     });
   }
 
-  void signUp(String name, String surname, String username, String email, String password) async {
-    SignUpResult result = await _cognito.signUp(name, surname, username, email, password);
-    switch (result) {
-      case SignUpResult.USERNAME_ALREADY_IN_USE:
-        // TODO: Handle this case.
-        break;
-      case SignUpResult.NETWORK_ERROR:
-        // TODO: Handle this case.
-        break;
-      case SignUpResult.SUCCESS:
-        // TODO: Handle this case.
-        break;
-    }
+  void _signOut() async {
+    _setAuthenticated(false);
+    await _cognito.signOut();
   }
 
-  void signIn() {
-    //cognito.signIn();
+  void _getTalksByTag() async {
+    txt2.text = "";
+    txt2.text = await _cognito.getTalksByTag(false);
+  }
+
+  void _getTalksByTagWithToken() async {
+    txt1.text = "";
+    txt1.text = await _cognito.getTalksByTag(true);
+  }
+
+  Widget _homePage() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Expanded(
+              child: Column(
+                children: [
+                  RaisedButton(
+                    child: Text('GetTalksByTag - ID token'),
+                    onPressed: _getTalksByTagWithToken,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    height: 500,
+                    child: TextField(
+                      maxLines: 20,
+                      enabled: false,
+                      controller: txt1,
+                    ),
+                  )
+                ]
+              ),
+            ),
+            Expanded(
+              child: Column(
+                children: [
+                  RaisedButton(
+                    child: Text('GetTalksByTag - no token'),
+                    onPressed: _getTalksByTag,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    height: 500,
+                    child: TextField(
+                      maxLines: 20,
+                      enabled: false,
+                      controller: txt2,
+                    ),
+                  )
+                ]
+              )
+            ),
+          ],
+        ),
+        Center(
+          child: RaisedButton(
+            child: Text('Sign-out'),
+            onPressed: _signOut,
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget _authPage() {
+    return Center(
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            _authSignUp ? SignUpForm(_cognito.signUp, _toggleAuthPage) : SignInForm(_cognito.signIn, _setAuthenticated),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32.0),
+              child: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: _authSignUp ? "Already have an account? " : "Need an account? ",
+                    ),
+                    TextSpan(
+                      text: _authSignUp ? "Sign-in" : "Sign-up",
+                      style: TextStyle(color: Colors.blue),
+                      recognizer: TapGestureRecognizer()
+                      ..onTap = () {
+                        _toggleAuthPage();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            )
+          ],
+        )
+      )
+    );
   }
 
   @override
@@ -105,35 +203,7 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              _authSignUp ? SignUpForm(signUp) : SignInForm(signIn),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 32.0),
-                child: new RichText(
-                  text: new TextSpan(
-                    children: [
-                      new TextSpan(
-                        text: _authSignUp ? "Already have an account? " : "Need an account? ",
-                      ),
-                      new TextSpan(
-                        text: _authSignUp ? "Sign-in" : "Sign-up",
-                        style: new TextStyle(color: Colors.blue),
-                        recognizer: new TapGestureRecognizer()
-                          ..onTap = () {
-                            toggleAuthPage();
-                          },
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            ],
-          )
-        )
-      )
+      body: _authenticated ? _homePage() : _authPage()
     );
   }
 }
