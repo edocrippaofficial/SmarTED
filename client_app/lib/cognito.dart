@@ -50,7 +50,6 @@ class Cognito {
         ]
       );
     } catch (e) {
-      print(e);
       switch (e.code) {
         case "NetworkError":
           return SignUpResult.NETWORK_ERROR;
@@ -65,16 +64,15 @@ class Cognito {
 
   Future<SignInResult> signIn(String username, String password) async {
     _user = new CognitoUser(username, _userPool);
+    _user.setAuthenticationFlowType('USER_PASSWORD_AUTH');
     final authDetails = new AuthenticationDetails(
       username: username,
       password: password,
     );
-    
     try {
       _session = await _user.authenticateUser(authDetails);
       print(_session);
     } on CognitoClientException catch (e) {
-      print(e);
       switch (e.code) {
         case "NetworkError":
           return SignInResult.NETWORK_ERROR;
@@ -85,30 +83,29 @@ class Cognito {
         default:
           return SignInResult.UNKNOWN_ERROR;
       }
-    } on CognitoUserConfirmationNecessaryException catch(e) {
-      print(e);
-      await signIn(username, password);
+    } on CognitoUserConfirmationNecessaryException {
+      return SignInResult.ACCOUNT_NOT_CONFIRMED;
     } catch (e) {
-      print(e);
       return SignInResult.UNKNOWN_ERROR;
     }
     return SignInResult.SUCCESS;
   }
 
   Future<String> getTalksByTag(bool token) async {
-    const endpoint = 'https://oph6fo60tj.execute-api.us-east-1.amazonaws.com/default/GetTalksByTag';
+    const endpoint = 'https://l85hlnhue2.execute-api.us-east-1.amazonaws.com/default';
+    const path = '/GetFollowers';
     Map headers = <String, String>{
       'Content-Type': 'application/json',
       'Authorization': token ? _session.getIdToken().getJwtToken() : '',
     };
     String body = jsonEncode(<String, Object>{
-      'tag': 'energy',
+      'username': 'edocrippaofficial',
       'doc_per_page': 2,
       'page': 1
     });
     try {
       http.Response response = await http.post(
-        endpoint,
+        endpoint + path,
         headers: headers,
         body: body,
       );
