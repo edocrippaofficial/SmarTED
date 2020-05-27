@@ -1,7 +1,8 @@
+
 const connectToDB = require('./db');
 const user = require('./User');
 
-module.exports.getFollowers = (event, context, callback) => {
+module.exports.getFollowing = (event, context, callback) => {
     context.callbackWaitsForEmptyEventLoop = false;
     console.log('Received event:', JSON.stringify(event, null, 2));
     let body = {};
@@ -20,13 +21,12 @@ module.exports.getFollowers = (event, context, callback) => {
     
     // Connect to DB
     connectToDB().then(() => {
-        console.log('=> collecting users that follow ' + body.username);
-        user.find({username: body.username}, {_id: 0, followers: 1})
-            .then(followers => {
-                    console.log('=> User: ' + followers);
+        console.log('=> collecting followed  ' + body.username);
+        user.find({followers: body.username})
+            .then(users => {
                     callback(null, {
                         statusCode: 200,
-                        body: JSON.stringify(followers)
+                        body: JSON.stringify(users)
                     });
                 }
             )
